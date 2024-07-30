@@ -1,0 +1,42 @@
+﻿@model List<SIMS_ASM.Models.Timetable>
+
+@{
+    ViewData["Title"] = "Course Timetable";
+}
+
+<div class="container">
+    <h1 class="text-center mt-5 mb-4">Course Timetable</h1>
+
+    @if (Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">Room</th>
+                        <th scope="col">Start Time</th>
+                        <th scope="col">End Time</th>
+                        <th scope="col">Day of Week</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Room</td>
+                            <td>@item.StartTime.ToShortTimeString()</td>
+                            <td>@item.EndTime.ToShortTimeString()</td>
+                            <td>@item.DayOfWeek</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            No timetable found for this course.
+        </div>
+    }
+</div>

@@ -1,0 +1,58 @@
+﻿@model List<SIMS_ASM.Models.User>
+
+@{
+    ViewData["Title"] = "Students in Course";
+}
+
+<h1>Students in @ViewBag.courseN</h1>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
+    </div>
+}
+<div class="mb-3">
+    <a href="@Url.Action("AddStudentToCourse", "Admin", new { courseId = ViewBag.CourseId })" class="btn btn-success">Add Student to Course</a>
+</div>
+
+
+@if (Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Date of Birth</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in Model)
+            {
+                <tr>
+                    <td>@student.Id</td>
+                    <td>@student.Name</td>
+                    <td>@student.Email</td>
+                    <td>@student.Phone</td>
+                    <td>@student.DoB.ToShortDateString()</td>
+                    <td>
+                        <a href="@Url.Action("DeleteStudentFromCourse", "Admin", new { courseId = ViewBag.CourseId, studentId = student.Id })" class="btn btn-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No students found in this course.</p>
+}

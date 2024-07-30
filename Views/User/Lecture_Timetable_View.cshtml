@@ -1,0 +1,51 @@
+﻿@model Dictionary<SIMS_ASM.Models.Course, List<(SIMS_ASM.Models.Timetable timetable, string lecturerName)>>
+
+@{
+    ViewData["Title"] = "Lecture Timetable View";
+}
+
+<h1 class="text-center">Lecture Timetable View</h1>
+
+<div class="container">
+    @if (Model.Any())
+    {
+        @foreach (var item in Model)
+        {
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">@item.Key.Name</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-3">Timetable:</h6>
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Room</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Day of Week</th>
+                                <th>Lecturer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tuple in item.Value)
+                            {
+                                <tr>
+                                    <td>@tuple.timetable.Room</td>
+                                    <td>@tuple.timetable.StartTime.ToShortTimeString()</td>
+                                    <td>@tuple.timetable.EndTime.ToShortTimeString()</td>
+                                    <td>@tuple.timetable.DayOfWeek</td>
+                                    <td>@tuple.lecturerName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-center">No timetables found.</p>
+    }
+</div>

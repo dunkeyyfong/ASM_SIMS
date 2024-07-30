@@ -1,0 +1,28 @@
+﻿@model SIMS_ASM.Models.User
+
+@{
+    ViewData["Title"] = "User Profile";
+}
+
+<h1 class="text-center mb-4">User Profile</h1>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    Profile Information
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Name:</strong> @Model.Name</li>
+                        <li class="list-group-item"><strong>Email:</strong> @Model.Email</li>
+                        <li class="list-group-item"><strong>Phone:</strong> @Model.Phone</li>
+                        <li class="list-group-item"><strong>Date of Birth:</strong> @Model.DoB.ToShortDateString()</li>
+                        <li class="list-group-item"><strong>Role:</strong> @Model.Role</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

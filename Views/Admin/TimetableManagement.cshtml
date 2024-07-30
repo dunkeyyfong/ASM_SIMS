@@ -1,0 +1,45 @@
+﻿@model List<SIMS_ASM.Models.Timetable>
+
+@{
+    ViewData["Title"] = "Timetable Management";
+}
+@{
+    List<Course> courses = ViewBag.Courses;
+    List<User> lectures = ViewBag.Lectures;
+}
+<h1>Timetable Management</h1>
+
+<a href="@Url.Action("CreateTimetable", "Admin")" class="btn btn-primary">Create New Timetable</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Course Name</th>
+            <th>Lecture Name</th>
+            <th>Room</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Day of Week</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var timetable in Model)
+        {
+            <tr>
+                <td>@timetable.Id</td>
+                <td>@courses.FirstOrDefault(c => c.Id == timetable.CourseId)?.Name</td>
+                <td>@lectures.FirstOrDefault(l => l.Id == timetable.LectureId)?.Name</td>
+                <td>@timetable.Room</td>
+                <td>@timetable.StartTime.ToString("dd/MM/yyyy hh:mm tt")</td>
+                <td>@timetable.EndTime.ToString("dd/MM/yyyy hh:mm tt")</td>
+                <td>@timetable.DayOfWeek</td>
+                <td>
+                    <a href="@Url.Action("EditTimetable", "Admin", new { id = timetable.Id })" class="btn btn-primary">Edit</a>
+                    <a href="@Url.Action("DeleteTimetable", "Admin", new { id = timetable.Id })" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this timetable?')">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

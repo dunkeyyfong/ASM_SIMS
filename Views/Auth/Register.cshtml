@@ -1,0 +1,41 @@
+﻿@{
+    ViewData["Title"] = "Register";
+}
+
+<h1>Register</h1>
+
+@model User
+
+
+@using (Html.BeginForm("Register", "Auth", FormMethod.Post, new { @class = "form-horizontal" }))
+{
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mb-2" role="alert">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="Name">Name:</label>
+        <input type="text" id="Name" name="Name" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="Email">Email:</label>
+        <input type="email" id="Email" name="Email" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="Password">Password:</label>
+        <input type="password" id="Password" name="Password" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="Phone">Phone:</label>
+        <input type="tel" id="Phone" name="Phone" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="DoB">Date of Birth:</label>
+        <input type="date" id="DoB" name="DoB" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+}

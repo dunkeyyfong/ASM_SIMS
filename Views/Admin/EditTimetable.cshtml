@@ -1,0 +1,56 @@
+﻿@model SIMS_ASM.Models.Timetable
+
+@{
+    ViewData["Title"] = "Edit Timetable";
+}
+
+<h1>Edit Timetable</h1>
+
+<form method="post" asp-action="EditTimetable">
+    <input type="hidden" asp-for="Id" />
+    <div class="form-group">
+        <label for="CourseId">Course Name</label>
+        <select class="form-control" id="CourseId" name="CourseId" required>
+            @foreach (var course in ViewBag.Courses)
+            {
+                <option value="@course.Id">@course.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="LectureId">Lecture Name</label>
+        <select class="form-control" id="LectureId" name="LectureId" required>
+            @foreach (var lecture in ViewBag.Lectures)
+            {
+                <option value="@lecture.Id">@lecture.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="Room">Room</label>
+        <input type="text" class="form-control" id="Room" name="Room" value="@Model.Room" required>
+    </div>
+    <div class="form-group">
+        <label for="StartTime">Start Time</label>
+        <input type="datetime-local" class="form-control" id="StartTime" name="StartTime" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" required>
+    </div>
+    <div class="form-group">
+        <label for="EndTime">End Time</label>
+        <input type="datetime-local" class="form-control" id="EndTime" name="EndTime" value="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm")" required>
+    </div>
+    <div class="form-group">
+        <label for="DayOfWeek">Day of Week</label>
+        <select class="form-control" id="DayOfWeek" name="DayOfWeek" required>
+            <option value="Monday" selected="@(Model.DayOfWeek == "Monday")">Monday</option>
+            <option value="Tuesday" selected="@(Model.DayOfWeek == "Tuesday")">Tuesday</option>
+            <option value="Wednesday" selected="@(Model.DayOfWeek == "Wednesday")">Wednesday</option>
+            <option value="Thursday" selected="@(Model.DayOfWeek == "Thursday")">Thursday</option>
+            <option value="Friday" selected="@(Model.DayOfWeek == "Friday")">Friday</option>
+            <option value="Saturday" selected="@(Model.DayOfWeek == "Saturday")">Saturday</option>
+            <option value="Sunday" selected="@(Model.DayOfWeek == "Sunday")">Sunday</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>

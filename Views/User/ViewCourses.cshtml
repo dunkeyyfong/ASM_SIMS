@@ -1,0 +1,45 @@
+﻿@model List<SIMS_ASM.Models.Course>
+
+@{
+    ViewData["Title"] = "User Courses";
+}
+
+<h1>User Courses</h1>
+
+@if (Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Course ID</th>
+                <th>Name</th>
+                <th>Total Students</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Attendance Sessions</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in Model)
+            {
+                <tr>
+                    <td>@course.Id</td>
+                    <td>@course.Name</td>
+                    <td>@course.TotalNumberOfStudents</td>
+                    <td>@course.StartDate.ToShortDateString()</td>
+                    <td>@course.EndDate.ToShortDateString()</td>
+                    <td>@course.AttendanceSessions</td>
+                    <td>
+                        <a class="btn btn-primary" href="@Url.Action("ViewTimetable", "User", new { courseId = course.Id })">View Timetable</a>
+                    </td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No courses found for this user.</p>
+}

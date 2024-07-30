@@ -1,0 +1,50 @@
+﻿@model List<SIMS_ASM.Models.Course>
+
+@{
+    ViewData["Title"] = "Manage Courses";
+}
+
+<h1>Manage Courses</h1>
+@if (TempData["SuccessMessage"] != null)
+{
+<div class="alert alert-success" role="alert">
+    @TempData["SuccessMessage"]
+</div>
+}
+<div class="mb-3">
+    <a href="@Url.Action("AddCourse", "Admin")" class="btn btn-success">Add Course</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Total Students</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Number Of Sessions</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var course in Model)
+            {
+                <tr>
+                    <td>@course.Id</td>
+                    <td>@course.Name</td>
+                    <td>@course.TotalNumberOfStudents</td>
+                    <td>@course.StartDate.ToShortDateString()</td>
+                    <td>@course.EndDate.ToShortDateString()</td>
+                    <td>@course.AttendanceSessions</td>
+                    <td>
+                        <a href="@Url.Action("EditCourse", "Admin", new { id = course.Id })" class="btn btn-primary">Edit</a>
+                        <a href="@Url.Action("DeleteCourse", "Admin", new { id = course.Id })" class="btn btn-danger">Delete</a>
+                        <a href="@Url.Action("ViewStudentsInCourse", "Admin", new { id = course.Id })" class="btn btn-info">View Students</a>
+
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

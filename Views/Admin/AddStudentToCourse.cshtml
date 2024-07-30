@@ -1,0 +1,45 @@
+﻿@model List<SIMS_ASM.Models.User>
+
+@{
+    ViewData["Title"] = "Add Student to Course";
+}
+
+<h1>Add Student to Course</h1>
+@if (ViewBag.SuccessMessage != null)
+{
+    <div class="alert alert-success" role="alert">
+        @ViewBag.SuccessMessage
+    </div>
+}
+<form method="post" action="@Url.Action("AddStudentsToCourse", "Admin")">
+    <input type="hidden" name="courseId" value="@ViewBag.CourseId" />
+    <div class="mb-3">
+        <button type="submit" class="btn btn-success">Add Selected Students to Course</button>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Date of Birth</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var student in Model)
+            {
+                <tr>
+                    <td><input type="checkbox" name="selectedStudents" value="@student.Id" /></td>
+                    <td>@student.Id</td>
+                    <td>@student.Name</td>
+                    <td>@student.Email</td>
+                    <td>@student.Phone</td>
+                    <td>@student.DoB.ToShortDateString()</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</form>
+

@@ -1,0 +1,34 @@
+﻿
+@{
+    ViewData["Title"] = "Add Course";
+}
+
+@model SIMS_ASM.Models.Course
+
+<h1>Add Course</h1>
+
+
+<form method="post" action="@Url.Action("AddCourse", "Admin")">
+    <div class="form-group">
+        <label for="Name">Name:</label>
+        <input type="text" class="form-control" id="Name" name="Name" required>
+        @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+    </div>
+    <div class="form-group">
+        <label for="StartDate">Start Date:</label>
+        <input type="date" class="form-control" id="StartDate" name="StartDate" required>
+        @Html.ValidationMessageFor(model => model.StartDate, "", new { @class = "text-danger" })
+    </div>
+    <div class="form-group">
+        <label for="EndDate">End Date:</label>
+        <input type="date" class="form-control" id="EndDate" name="EndDate" required>
+        @Html.ValidationMessageFor(model => model.EndDate, "", new { @class = "text-danger" })
+    </div>
+    <div class="form-group">
+        <label for="AttendanceSessions">Number Of Sessions:</label>
+        <input type="text" class="form-control" id="AttendanceSessions" name="AttendanceSessions" required>
+        @Html.ValidationMessageFor(model => model.AttendanceSessions, "", new { @class = "text-danger" })
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>
+

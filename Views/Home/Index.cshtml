@@ -1,0 +1,46 @@
+﻿@{
+    ViewData["Title"] = "SIMS - Home Page";
+}
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsLoggedIn") == null)
+{
+    <div class="container-fluid py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card shadow-lg">
+                        <div class="card-body">
+                            <h2 class="card-title text-center text-primary">Welcome to SIMS</h2>
+                            <p class="card-text text-center mb-4">Please login or register to continue.</p>
+                            <div class="d-flex justify-content-center">
+                                <a asp-controller="Auth" asp-action="Login" class="btn btn-primary mr-3">Login</a>
+                                <a asp-controller="Auth" asp-action="Register" class="btn btn-success">Register</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsLoggedIn") != null && HttpContextAccessor.HttpContext.Session.GetString("Role") == "Admin")
+{
+    <div class="container">
+        <h1>Welcome Admin</h1>
+    </div>
+}
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsLoggedIn") != null && HttpContextAccessor.HttpContext.Session.GetString("Role") == "Student")
+{
+    <div class="container">
+        <h1>Welcome Student</h1>
+    </div>
+}
+@if (HttpContextAccessor.HttpContext.Session.GetString("IsLoggedIn") != null && HttpContextAccessor.HttpContext.Session.GetString("Role") == "Lecture")
+{
+    <div class="container">
+        <h1>Welcome Lecture</h1>
+    </div>
+}
