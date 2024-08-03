@@ -1,0 +1,3 @@
+Id,Name,Password,Email,Phone,DoB,Role
+1,Test CSV,123@123a,CSV@gmail.com,01289219,11/11/1111 00:00:00,Student
+2,Test CSV Lecture,123@123a,lecture@hihi.com,01291828912,02/12/1212 00:00:00,Lecture

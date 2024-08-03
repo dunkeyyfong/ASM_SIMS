@@ -1,18 +1,21 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using CsvHelper;
 using SIMS_ASM.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Globalization;
+using CsvHelper.Configuration;
 
 namespace SIMS_ASM.Controllers
 {
     public class AdminController : Controller
     {
-        private readonly string _userDataFilePath = "data_user.json";
-        private readonly string _courseDataFilePath = "course_data.json";
-        private readonly string _timetableDataFilePath = "timetable_data.json";
+        private readonly string _userDataFilePathCSV = "data_user.csv";
+        private readonly string _courseDataFilePathCSV = "course_data.csv";
+        private readonly string _timetableDataFilePathCSV = "timetable_data.csv";
 
 
         [HttpGet]
@@ -25,7 +28,7 @@ namespace SIMS_ASM.Controllers
         [HttpPost]
         public IActionResult UserManagement(string userType)
         {
-            var users_json = GetAllUsersFromJson();
+            var users_json = GetAllUsersFromCSV();
             ViewBag.UserType = userType; // Lưu userType vào ViewBag
             if (userType == "Student")
             {
@@ -43,12 +46,21 @@ namespace SIMS_ASM.Controllers
         }
 
 
-
-        // Lấy toàn bộ danh sách người dùng từ tệp JSON
-        private List<User> GetAllUsersFromJson()
+        private List<User> GetAllUsersFromCSV()
         {
-            string jsonData = System.IO.File.ReadAllText(_userDataFilePath);
-            var users = JsonConvert.DeserializeObject<List<User>>(jsonData);
+            var users = new List<User>();
+
+            if (System.IO.File.Exists(_userDataFilePathCSV))
+            {
+                using (var reader = new StreamReader(_userDataFilePathCSV))
+                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    BadDataFound = null // Bỏ qua dữ liệu không hợp lệ
+                }))
+                {
+                    users = csv.GetRecords<User>().ToList();
+                }
+            }
             return users;
         }
 
@@ -57,7 +69,7 @@ namespace SIMS_ASM.Controllers
         // Lấy thông tin sinh viên theo ID
         private User GetUserById(int id)
         {
-            var users = GetAllUsersFromJson();
+            var users = GetAllUsersFromCSV();
             return users.FirstOrDefault(u => u.Id == id);
         }
 
@@ -76,13 +88,13 @@ namespace SIMS_ASM.Controllers
         [HttpPost]
         public IActionResult EditUser(User updatedUser)
         {
-            var users = GetAllUsersFromJson();
+            var users = GetAllUsersFromCSV();
             var existingUser = users.FirstOrDefault(u => u.Id == updatedUser.Id);
             if (existingUser == null)
                 return NotFound();
 
             UpdateUserDetails(existingUser, updatedUser);
-            SaveUsersToJson(users);
+            SaveUsersToCSV(users);
             TempData["SuccessMessage"] = $"Account {existingUser.Email} update successfully.";
 
             return RedirectToAction("UserManagement");
@@ -102,13 +114,13 @@ namespace SIMS_ASM.Controllers
         [HttpPost]
         public IActionResult DeleteUser(int id)
         {
-            var users = GetAllUsersFromJson();
+            var users = GetAllUsersFromCSV();
             var userToDelete = users.FirstOrDefault(u => u.Id == id);
             if (userToDelete == null)
                 return NotFound();
 
             users.Remove(userToDelete);
-            SaveUsersToJson(users);
+            SaveUsersToCSV(users);
             TempData["SuccessMessage"] = $"Account {userToDelete.Email} delete successfully.";
             return RedirectToAction("UserManagement");
         }
@@ -129,7 +141,7 @@ namespace SIMS_ASM.Controllers
         {
             if (ModelState.IsValid)
             {
-                var users = GetAllUsersFromJson();
+                var users = GetAllUsersFromCSV();
 
                 // Tạo ID mới cho người dùng
                 int newId = users.Count > 0 ? users.Max(u => u.Id) + 1 : 1;
@@ -139,7 +151,7 @@ namespace SIMS_ASM.Controllers
                 users.Add(newUser);
 
                 // Lưu danh sách người dùng vào file JSON
-                SaveUsersToJson(users);
+                SaveUsersToCSV(users);
 
                 // Đặt thông báo thành công vào TempData
                 TempData["SuccessMessage"] = $"Account {newUser.Role} {newUser.Name} created successfully for {newUser.Email} and Password {newUser.Password}.";
@@ -151,13 +163,16 @@ namespace SIMS_ASM.Controllers
             return View(newUser);
         }
 
-        // Lưu danh sách người dùng vào file JSON
-        private void SaveUsersToJson(List<User> users)
+
+        // Lưu danh sách người dùng vào file CSV
+        private void SaveUsersToCSV(List<User> users)
         {
-            System.IO.File.WriteAllText(_userDataFilePath, JsonConvert.SerializeObject(users));
+            using (var writer = new StreamWriter(_userDataFilePathCSV))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(users);
+            }
         }
-
-
 
 
 
@@ -181,7 +196,7 @@ namespace SIMS_ASM.Controllers
             if (ModelState.IsValid)
             {
                 // Lấy danh sách khóa học từ tệp JSON (nếu có)
-                List<Course> courses = GetCoursesFromJson();
+                List<Course> courses = GetCoursesFromCSV();
 
                 // Tạo ID mới cho khóa học
                 int newId = courses.Count > 0 ? courses[courses.Count - 1].Id + 1 : 1;
@@ -192,7 +207,7 @@ namespace SIMS_ASM.Controllers
                 courses.Add(newCourse);
 
                 // Lưu danh sách khóa học mới vào tệp JSON
-                SaveCoursesToJson(courses);
+                SaveCoursesToCSV(courses);
 
 
                 TempData["SuccessMessage"] = $"Course {newCourse.Name} create sucessfully.";
@@ -212,30 +227,38 @@ namespace SIMS_ASM.Controllers
         public IActionResult ManageCourses()
         {
             // Lấy danh sách khóa học từ tệp JSON
-            List<Course> courses = GetCoursesFromJson();
+            List<Course> courses = GetCoursesFromCSV();
 
             return View(courses);
         }
 
-        // Phương thức để lấy danh sách khóa học từ tệp JSON
-        private List<Course> GetCoursesFromJson()
+        private List<Course> GetCoursesFromCSV()
         {
-            List<Course> courses = new List<Course>();
+            var courses = new List<Course>();
 
-            if (System.IO.File.Exists(_courseDataFilePath))
+            if (System.IO.File.Exists(_courseDataFilePathCSV))
             {
-                string jsonData = System.IO.File.ReadAllText(_courseDataFilePath);
-                courses = JsonConvert.DeserializeObject<List<Course>>(jsonData);
+                using (var reader = new StreamReader(_courseDataFilePathCSV))
+                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    BadDataFound = null // Bỏ qua dữ liệu không hợp lệ
+                }))
+                {
+                    courses = csv.GetRecords<Course>().ToList();
+                }
             }
-
             return courses;
         }
 
-        // Phương thức để lưu danh sách khóa học vào tệp JSON
-        private void SaveCoursesToJson(List<Course> courses)
-        {
-            System.IO.File.WriteAllText(_courseDataFilePath, JsonConvert.SerializeObject(courses));
 
+        // Phương thức để lưu danh sách khóa học vào tệp CSV
+        private void SaveCoursesToCSV(List<Course> courses)
+        {
+            using (var writer = new StreamWriter(_courseDataFilePathCSV))
+            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+            {
+                csv.WriteRecords(courses);
+            }
         }
 
 
@@ -249,7 +272,7 @@ namespace SIMS_ASM.Controllers
         public IActionResult EditCourse(int id)
         {
             // Lấy danh sách khóa học từ tệp JSON
-            List<Course> courses = GetCoursesFromJson();
+            List<Course> courses = GetCoursesFromCSV();
 
             // Tìm khóa học cần chỉnh sửa trong danh sách
             Course courseToEdit = courses.FirstOrDefault(c => c.Id == id);
@@ -270,7 +293,7 @@ namespace SIMS_ASM.Controllers
             if (ModelState.IsValid)
             {
                 // Lấy danh sách khóa học từ tệp JSON
-                List<Course> courses = GetCoursesFromJson();
+                List<Course> courses = GetCoursesFromCSV();
 
                 // Tìm khóa học cần chỉnh sửa trong danh sách
                 Course courseToEdit = courses.FirstOrDefault(c => c.Id == editedCourse.Id);
@@ -287,7 +310,7 @@ namespace SIMS_ASM.Controllers
                 courseToEdit.EndDate = editedCourse.EndDate;
                 courseToEdit.AttendanceSessions = editedCourse.AttendanceSessions;
                 // Lưu danh sách khóa học mới vào tệp JSON
-                SaveCoursesToJson(courses);
+                SaveCoursesToCSV(courses);
 
                 TempData["SuccessMessage"] = $"Course {courseToEdit.Name} edit sucessfully.";
 
@@ -308,8 +331,8 @@ namespace SIMS_ASM.Controllers
         // Action để xử lý yêu cầu xóa khóa học
         public IActionResult DeleteCourse(int id)
         {
-            // Lấy danh sách khóa học từ tệp JSON
-            List<Course> courses = GetCoursesFromJson();
+            // Lấy danh sách khóa học từ tệp CSV
+            List<Course> courses = GetCoursesFromCSV();
 
             // Tìm khóa học cần xóa trong danh sách
             Course courseToDelete = courses.FirstOrDefault(c => c.Id == id);
@@ -323,8 +346,8 @@ namespace SIMS_ASM.Controllers
             // Xóa khóa học khỏi danh sách
             courses.Remove(courseToDelete);
 
-            // Lưu danh sách khóa học mới vào tệp JSON
-            SaveCoursesToJson(courses);
+            // Lưu danh sách khóa học mới vào tệp CSV
+            SaveCoursesToCSV(courses);
 
 
             TempData["SuccessMessage"] = $"Course {courseToDelete.Name} delete sucessfully.";
@@ -340,11 +363,10 @@ namespace SIMS_ASM.Controllers
 
 
 
-        // Action để hiển thị danh sách sinh viên trong một khóa học
         public IActionResult ViewStudentsInCourse(int id)
         {
-            // Đọc dữ liệu từ tệp JSON chứa thông tin về các khóa học
-            List<Course> courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePath));
+            // Đọc dữ liệu từ tệp CSV chứa thông tin về các khóa học
+            List<Course> courses = GetCoursesFromCSV();
 
             // Tìm khóa học có Id tương ứng
             Course course = courses.FirstOrDefault(c => c.Id == id);
@@ -357,20 +379,19 @@ namespace SIMS_ASM.Controllers
 
             // Lấy danh sách sinh viên tham gia vào khóa học
             List<User> studentsInCourse = GetStudentsInCourse(course.UserIds);
-            ViewBag.courseN = course.Name;
+            ViewBag.CourseName = course.Name;
             ViewBag.CourseId = course.Id;
 
             // Trả về view hiển thị danh sách sinh viên trong khóa học
             return View(studentsInCourse);
         }
 
-        // Phương thức để lấy danh sách sinh viên tham gia vào khóa học
         private List<User> GetStudentsInCourse(List<int> userIds)
         {
-            // Đọc dữ liệu từ tệp JSON chứa thông tin người dùng
-            List<User> users = JsonConvert.DeserializeObject<List<User>>(System.IO.File.ReadAllText(_userDataFilePath));
+            // Đọc dữ liệu từ tệp CSV chứa thông tin người dùng
+            List<User> users = GetAllUsersFromCSV();
 
-            // Lọc danh sách người dùng để chỉ bao gồm những sinh viên có ID trong danh sách UserIds
+            // Lọc danh sách người dùng để chỉ bao gồm những sinh viên có ID trong danh sách userIds
             var studentsInCourse = users.Where(user => userIds.Contains(user.Id) && user.Role == "Student").ToList();
 
             return studentsInCourse;
@@ -390,10 +411,12 @@ namespace SIMS_ASM.Controllers
 
 
 
-        // Phương thức để lấy thông tin khóa học từ ID
         private Course GetCourseById(int courseId)
         {
-            var courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePath));
+            // Đọc danh sách khóa học từ file CSV
+            var courses = GetCoursesFromCSV();
+
+            // Tìm khóa học có Id tương ứng
             return courses.FirstOrDefault(c => c.Id == courseId);
         }
 
@@ -403,8 +426,8 @@ namespace SIMS_ASM.Controllers
 
         public IActionResult AddStudentToCourse(int courseId)
         {
-            // Load danh sách sinh viên
-            var students_list = JsonConvert.DeserializeObject<List<User>>(System.IO.File.ReadAllText(_userDataFilePath));
+            // Load danh sách sinh viên từ file CSV
+            var students_list = GetAllUsersFromCSV();
 
             // Load thông tin khóa học từ ID
             var course = GetCourseById(courseId);
@@ -414,60 +437,122 @@ namespace SIMS_ASM.Controllers
                 // Ví dụ: Hiển thị thông báo lỗi và chuyển hướng người dùng đến trang quản lý khóa học
                 return RedirectToAction("ManageCourses");
             }
-            var userNotEnrolled = students_list.Where(s => !course.UserIds.Any(u => u == s.Id));
-            var result = userNotEnrolled.Where(u => u.Role == "Student");
+
+            // Lọc danh sách sinh viên để chỉ bao gồm những sinh viên chưa được ghi danh vào khóa học
+            var userNotEnrolled = students_list.Where(s => !course.UserIds.Contains(s.Id) && s.Role == "Student");
 
             ViewBag.CourseId = course.Id;
 
-            return View(result.ToList());
+            return View(userNotEnrolled.ToList());
         }
+
 
 
 
 
 
         // Phương thức để lưu thông tin khóa học đã được cập nhật vào file
-        private void SaveCourseToFile(Course course)
+        private void SaveCourseToFile(Course updatedCourse)
         {
-            var courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePath));
-            var existingCourse = courses.FirstOrDefault(c => c.Id == course.Id);
+            var courses = new List<Course>();
+
+            // Đọc dữ liệu từ file CSV
+            if (System.IO.File.Exists(_courseDataFilePathCSV))
+            {
+                using (var reader = new StreamReader(_courseDataFilePathCSV))
+                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+                {
+                    courses = csv.GetRecords<Course>().ToList();
+                }
+            }
+
+            // Tìm khóa học cần cập nhật
+            var existingCourse = courses.FirstOrDefault(c => c.Id == updatedCourse.Id);
             if (existingCourse != null)
             {
-                existingCourse.UserIds = course.UserIds;
-                System.IO.File.WriteAllText(_courseDataFilePath, JsonConvert.SerializeObject(courses));
+                // Cập nhật thông tin khóa học
+                existingCourse.UserIds = updatedCourse.UserIds;
+
+                // Ghi lại danh sách khóa học vào file CSV
+                using (var writer = new StreamWriter(_courseDataFilePathCSV))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csv.WriteRecords(courses);
+                }
+            }
+            else
+            {
+                // Xử lý trường hợp không tìm thấy khóa học
+                // Ví dụ: Thêm thông báo lỗi hoặc ghi log
+                throw new Exception($"Course with ID {updatedCourse.Id} not found.");
             }
         }
+
         private void SaveListCourseToFile(List<Course> courses)
         {
-            System.IO.File.WriteAllText(_courseDataFilePath, JsonConvert.SerializeObject(courses));
+            // Kiểm tra xem file có tồn tại không, nếu không thì tạo mới
+            using (var writer = new StreamWriter(_courseDataFilePathCSV))
+            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            {
+                // Ghi danh sách khóa học vào file CSV
+                csv.WriteRecords(courses);
+            }
         }
+
 
         [HttpPost]
         public IActionResult AddStudentsToCourse(int courseId, List<int> selectedStudents)
         {
-            // Load thông tin khóa học từ ID
-            var courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePath));
+            // Đọc danh sách khóa học từ file CSV
+            List<Course> courses;
+            using (var reader = new StreamReader(_courseDataFilePathCSV))
+            using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            {
+                courses = csv.GetRecords<Course>().ToList();
+            }
 
-            // Kiểm tra nếu khóa học không tồn tại
+            // Tìm khóa học theo ID
             var course = courses.FirstOrDefault(c => c.Id == courseId);
             if (course == null)
             {
-                // Xử lý khi không tìm thấy khóa học
+                // Nếu không tìm thấy khóa học, chuyển hướng đến trang quản lý khóa học
                 return RedirectToAction("ManageCourses");
             }
+
+            // Đọc danh sách sinh viên từ file CSV
+            List<User> students;
+            using (var reader = new StreamReader(_userDataFilePathCSV))
+            using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)))
+            {
+                students = csv.GetRecords<User>().ToList();
+            }
+
+            // Kiểm tra tính hợp lệ của danh sách sinh viên được chọn
+            var validStudentIds = selectedStudents.Where(id => students.Any(s => s.Id == id)).Distinct().ToList();
 
             // Thêm sinh viên vào khóa học
             if (course.UserIds == null)
             {
                 course.UserIds = new List<int>();
             }
-            course.UserIds.AddRange(selectedStudents);
-            course.TotalNumberOfStudents = course.UserIds.Count;
 
-            // Lưu lại thông tin khóa học đã được cập nhật
-            SaveListCourseToFile(courses);
+            // Loại bỏ các ID sinh viên đã có trong khóa học
+            var newStudentIds = validStudentIds.Except(course.UserIds).ToList();
+            if (newStudentIds.Any())
+            {
+                course.UserIds.AddRange(newStudentIds);
+                course.TotalNumberOfStudents = course.UserIds.Count;
 
-            TempData["SuccessMessage"] = $"{selectedStudents.Count} students have been successfully added to the course.";
+                // Lưu lại thông tin khóa học đã được cập nhật
+                SaveListCourseToFile(courses);
+
+                TempData["SuccessMessage"] = $"{newStudentIds.Count} students have been successfully added to the course.";
+            }
+            else
+            {
+                TempData["WarningMessage"] = "No new students were added. All selected students are already enrolled.";
+            }
+
             // Chuyển hướng về trang quản lý khóa học
             return RedirectToAction("ManageCourses");
         }
@@ -475,23 +560,25 @@ namespace SIMS_ASM.Controllers
 
 
 
+
         public IActionResult DeleteStudentFromCourse(int courseId, int studentId)
         {
-            var courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePath));
+            // Load danh sách khóa học từ tệp JSON (hoặc CSV nếu cần)
+            var courses = JsonConvert.DeserializeObject<List<Course>>(System.IO.File.ReadAllText(_courseDataFilePathCSV));
 
-            // Kiểm tra nếu khóa học không tồn tại
+            // Tìm khóa học theo ID
             var course = courses.FirstOrDefault(c => c.Id == courseId);
             if (course == null)
             {
-                // Xử lý khi không tìm thấy khóa học
-                ViewBag.ErrorMessage = "Course not found.";
+                // Nếu không tìm thấy khóa học, hiển thị thông báo lỗi và chuyển hướng về trang quản lý khóa học
+                TempData["ErrorMessage"] = "Course not found.";
                 return RedirectToAction("ManageCourses", "Admin");
             }
 
             // Kiểm tra nếu sinh viên không tồn tại trong khóa học
             if (!course.UserIds.Contains(studentId))
             {
-                // Xử lý khi không tìm thấy sinh viên trong khóa học
+                // Nếu không tìm thấy sinh viên trong khóa học, hiển thị thông báo lỗi và chuyển hướng về trang danh sách sinh viên trong khóa học
                 TempData["ErrorMessage"] = "Student not found in this course.";
                 return RedirectToAction("ViewStudentsInCourse", "Admin", new { id = courseId });
             }
@@ -503,9 +590,8 @@ namespace SIMS_ASM.Controllers
             // Lưu lại thông tin khóa học đã được cập nhật
             SaveListCourseToFile(courses);
 
-            // Chuyển hướng về trang danh sách sinh viên trong khóa học
+            // Hiển thị thông báo thành công và chuyển hướng về trang danh sách sinh viên trong khóa học
             TempData["SuccessMessage"] = "Student successfully removed from the course.";
-
             return RedirectToAction("ViewStudentsInCourse", "Admin", new { id = courseId });
         }
 
@@ -528,30 +614,45 @@ namespace SIMS_ASM.Controllers
 
 
 
+
         private List<Course> LoadCourses()
         {
-            if (System.IO.File.Exists(_courseDataFilePath))
+            if (System.IO.File.Exists(_courseDataFilePathCSV))
             {
-                string json = System.IO.File.ReadAllText(_courseDataFilePath);
-                return JsonConvert.DeserializeObject<List<Course>>(json);
+                using (var reader = new StreamReader(_courseDataFilePathCSV))
+                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    BadDataFound = null // Bỏ qua dữ liệu không hợp lệ
+                }))
+                {
+                    return csv.GetRecords<Course>().ToList();
+                }
             }
             return new List<Course>();
         }
 
+
         private List<User> LoadLectures()
         {
-            if (System.IO.File.Exists(_userDataFilePath))
+            if (System.IO.File.Exists(_userDataFilePathCSV))
             {
-                string json = System.IO.File.ReadAllText(_userDataFilePath);
-                List<User> allUsers = JsonConvert.DeserializeObject<List<User>>(json);
+                using (var reader = new StreamReader(_userDataFilePathCSV))
+                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    BadDataFound = null // Bỏ qua dữ liệu không hợp lệ
+                }))
+                {
+                    var allUsers = csv.GetRecords<User>().ToList();
 
-                // Lọc và chỉ trả về danh sách người dùng có Role là "Lecture"
-                List<User> lectures = allUsers.Where(u => u.Role == "Lecture").ToList();
+                    // Lọc và chỉ trả về danh sách người dùng có Role là "Lecture"
+                    var lectures = allUsers.Where(u => u.Role == "Lecture").ToList();
 
-                return lectures;
+                    return lectures;
+                }
             }
             return new List<User>();
         }
+
 
 
 
@@ -576,18 +677,32 @@ namespace SIMS_ASM.Controllers
 
         private List<Timetable> LoadTimetables()
         {
-            if (System.IO.File.Exists(_timetableDataFilePath))
+            if (System.IO.File.Exists(_timetableDataFilePathCSV))
             {
-                string json = System.IO.File.ReadAllText(_timetableDataFilePath);
-                return JsonConvert.DeserializeObject<List<Timetable>>(json);
+                using (var reader = new StreamReader(_timetableDataFilePathCSV))
+                using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    BadDataFound = null // Bỏ qua dữ liệu không hợp lệ
+                }))
+                {
+                    return csv.GetRecords<Timetable>().ToList();
+                }
             }
             return new List<Timetable>();
         }
 
+
         private void SaveTimetables(List<Timetable> timetables)
         {
-            string json = JsonConvert.SerializeObject(timetables);
-            System.IO.File.WriteAllText(_timetableDataFilePath, json);
+            using (var writer = new StreamWriter(_timetableDataFilePathCSV))
+            using (var csv = new CsvWriter(writer, new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                // Cấu hình tùy chọn nếu cần
+                Delimiter = ",", // Đặt dấu phân cách nếu cần thiết
+            }))
+            {
+                csv.WriteRecords(timetables);
+            }
         }
 
 
